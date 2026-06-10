@@ -39,6 +39,10 @@ vim.o.scrolloff = 10
 -- Show <tab> and trailing spaces
 vim.o.list = true
 
+-- set tab width to 4 spaces.
+vim.opt.tabstop = 4
+vim.opt.shiftwidth = 4
+
 -- if performing an operation that would fail due to unsaved changes in the buffer (like `:q`),
 -- instead raise a dialog asking if you wish to save the current file(s) See `:help 'confirm'`
 vim.o.confirm = true
@@ -87,3 +91,26 @@ end, { desc = 'Print the git blame for the current line' })
 -- For example, to add the "nohlsearch" package to automatically turn off search highlighting after
 -- 'updatetime' and when going to insert mode
 vim.cmd('packadd! nohlsearch')
+
+vim.lsp.enable('clangd')
+
+vim.api.nvim_create_autocmd('LspAttach', {
+	group = vim.api.nvim_create_augroup('lsp', { clear = true }),
+	callback = function(ev)
+		local buffer = ev.buf
+		local opts = { buffer = buffer }
+
+		vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+		vim.keymap.set('n', 'ge', vim.lsp.buf.hover, opts)
+		vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
+		vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
+	end,
+})
+
+vim.diagnostic.config({
+	virtual_text = true,
+	signs = true,
+	underline = true,
+	update_in_insert = false,
+	severity_sort = true
+})
