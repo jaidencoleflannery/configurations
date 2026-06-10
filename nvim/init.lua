@@ -53,6 +53,17 @@ require("mason").setup()
 
 -- lsp (native 0.11+ api, no plugin needed).
 
+-- c#
+vim.lsp.config("roslyn", {
+    cmd = { "roslyn-language-server", "--stdio" },
+    filetypes = { "cs" },
+    root_dir = function(bufnr, callback)
+        callback(vim.fs.root(bufnr, { "*.sln", "*.csproj" }))
+    end,
+})
+
+vim.lsp.enable("roslyn")
+
 -- c / c++.
 
 vim.lsp.config("clangd", {
