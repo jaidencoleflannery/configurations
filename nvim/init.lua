@@ -26,6 +26,7 @@ require("lazy").setup({
 		dependencies = {
 			"mfussenegger/nvim-dap",
 			"nvim-neotest/nvim-nio",
+			"jay-babu/mason-nvim-dap.nvim"
 		},
 	},
 	{
@@ -48,30 +49,35 @@ require("lazy").setup({
 	{ "williamboman/mason.nvim" },
 })
 
--- mason (run :MasonInstall clangd codelldb)
+-- manager 
 require("mason").setup()
 
--- lsp (native 0.11+ api, no plugin needed).
-
--- c#
-vim.lsp.config("roslyn", {
-    cmd = { "roslyn-language-server", "--stdio" },
-    filetypes = { "cs" },
-    root_dir = function(bufnr, callback)
-        callback(vim.fs.root(bufnr, { "*.sln", "*.csproj" }))
-    end,
+require("mason-nvim-dap").setup({
+    ensure_installed = {
+        "netcoredbg",
+        "codelldb"
+    }
 })
 
-vim.lsp.enable("roslyn")
+-- lsp (native 0.11+ api, no plugin needed).
 
 -- c / c++.
 
 vim.lsp.config("clangd", {
 	cmd = { "clangd" },
-	root_markers = { "compile_commands.json", "Makefile", ".git" },
+	root_markers = { ".git" },
 	filetypes = { "c" },
 })
 vim.lsp.enable("clangd")
+
+-- c#
+
+vim.lsp.config("omnisharp", {
+    cmd = { vim.fn.stdpath("data") .. "/mason/bin/OmniSharp", "--languageserver" },
+    filetypes = { "cs" },
+    root_markers = { ".git" }
+})
+vim.lsp.enable("omnisharp")
 
 -- typescript.
 
@@ -165,6 +171,28 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
 -- dap (debugger)
 local dap = require("dap")
+
+-- dap c#
+
+dap.adapters.coreclr = {
+    type = "executable",
+    command = vim.fn.stdpath("data") .. "/mason/bin/netcoredbg",
+    args = { "--interpreter=vscode" },
+}
+
+dap.configurations.cs = {
+    {
+        type = "coreclr",
+        name = "Launch - netcoredbg",
+        request = "launch",
+        program = function()
+            return vim.fn.input("Path to dll: ", vim.fn.getcwd() .. "/bin/Debug", "file")
+        end,
+    },
+}
+
+-- dap c/c++
+
 dap.adapters.codelldb = {
 	type = "server",
 	port = "${port}",
@@ -173,10 +201,11 @@ dap.adapters.codelldb = {
 		args = { "--port", "${port}" },
 	},
 }
+
 dap.configurations.c = {
 	{
 		type = "codelldb",
-		name = "Launch",
+		name = "Launch - codelldb",
 		request = "launch",
 		program = function()
 			return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
